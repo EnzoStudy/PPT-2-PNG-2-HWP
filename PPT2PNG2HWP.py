@@ -2,6 +2,7 @@ import win32com.client as win32
 import win32com
 # https://github.com/mhammond/pywin32/releases/tag/b300 참고하여 버전에 맞게 다운로드
 
+import sys
 import os
 from tkinter import Tk
 from tkinter.filedialog import askopenfilenames
@@ -9,7 +10,9 @@ from tkinter.filedialog import askdirectory
 
 from PIL import Image
 #!pip install image
+
 from comtypes.client import Constants, CreateObject
+
 #!pip install comtypes
 import shutil
 import logging
@@ -21,6 +24,14 @@ def filelistsort(filelist):
     for i in filelist:
         #nlist.append( i[1].split('.')[0])
         print(i[1])
+
+def resource_path(relative_path):
+    try:
+        # PyInstaller에 의해 임시폴더에서 실행될 경우 임시폴더로 접근하는 함수
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 
 def ppt2png(pptFileDir, pngfolderDir):
@@ -105,7 +116,10 @@ def PngToHwp(dirpath, hwppath):
                 # filepath=filepath.replace("/","\\")
 
                 print(filepath.replace('\\', "/"))
-                hwp.InsertPicture(filepath, True, 2, None, None, None)
+
+
+                absfilepath=resource_path(filepath)
+                hwp.InsertPicture(absfilepath, True, 2)
 
             else:
                 print(file+"이미지 파일이 아닙니다.")
