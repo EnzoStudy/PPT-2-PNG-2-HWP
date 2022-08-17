@@ -6,6 +6,7 @@ PPT -> PNG -> HWP 파일 변경 프로그램
 버전관리
 v0.9(2022.01.11, 신재호) : .이 포함된 파일명 오류 제거 , 슬라이드번호 정렬 오류 해결 
 v1.0(2022.01.11, 신재호) : A3 이미지 입력시 HWP 사이즈 변경
+V1.1(2022.08.17, 신재호) : PNG 사이즈를 A4규격에 맞게
 '''
 
 import os
@@ -33,6 +34,12 @@ PNG_FILE_TYPE = 18
 JPG_FILE_TYPE = 16
 
 powerpoint = win32com.client.Dispatch('PowerPoint.Application')
+def printhelp():
+    print("\n\n################# 주의사항 ################")
+    print("1. 폴더, 파일명에 . 을 넣지 않기")
+    print("2. 파워포인트 인증이 안되었으면 프로그램 동작 전 미리 프로그램 한개 열기")
+    print("3. 중간에 오류 발생하면 HWP 파일에 PNG 파일 넣어서 수동 제작 ")
+    print("##########################################\n\n\n\n")
 
 def resource_path(relative_path):
     '''
@@ -89,13 +96,31 @@ def ppt2png(pptFileDir, pngfolderDir,filetype):
         print("     저장 완료 : ",pngfolderDir)
         print("     변환 완료 : ",pptFileDir)
 
-    except:
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        # logging.error(traceback.format_exc())
         print("     PPT2PNG 오류 발생")
+        print("오류명:", e)
+        print("powerpoint 제품 인증 실패를 확인하세요 -> 파워포인트를 하나 더 여시오 ")
+        printhelp()
+
      
 
 def HwpUnitToMili(hwpunit):
     return hwpunit * 283
+
+def PngReshape(filepath, type='A4'):
+    # https://ponyozzang.tistory.com/600 참고
+    A3_size = (1584,1122)
+    A4_size = (790,1110)
+
+    img = Image.open(filepath)
+    if type =='A4':
+        img_resize = img.resize(A4_size,Image.LANCZOS)
+    else:
+        img_resize = img.resize(A3_size,Image.LANCZOS)
+    img_resize.save(filepath)    
+
+
 
 def PngToHwp(pngpath, hwppath, hwpFileName):
     '''
@@ -148,11 +173,15 @@ def PngToHwp(pngpath, hwppath, hwpFileName):
         #A3 이미지 크기이면 HWP 사이즈 변경
         A3imageCheck = Image.open(os.path.join(pngpath, os.listdir(pngpath)[0]))
         A3imageCheckBool =False
-        if A3imageCheck.width > 1500:
+        if A3imageCheck.width > A3imageCheck.height:
             item_set.SetItem("PaperWidth", HwpUnitToMili(420))
             item_set.SetItem("PaperHeight", HwpUnitToMili(297))
             A3imageCheckBool = True
             print("     A3 양식 변경 ")
+        else:
+            #A4 사이즈로 양식 변경
+            item_set.SetItem("PaperWidth", HwpUnitToMili(210))
+            item_set.SetItem("PaperHeight", HwpUnitToMili(297))
 
         act.Execute(pset)
 
@@ -176,17 +205,19 @@ def PngToHwp(pngpath, hwppath, hwpFileName):
 
                 image = Image.open(filepath)
                 
-                #resize_image = image.resize((810, 1140))
-                #resize_image.save(filepath)
-                #resize_image = image.resize((1123, 1587)) #resize_image = image.resize((794, 1123))
-                #image.thumbnail((810, 1140), Image.ANTIALIAS)
-                
                 filepath=filepath.replace("/","\\")
 
+    
                 #https://www.hancom.com/board/devmanualList.do?artcl_seq=3978 참고
                 if A3imageCheckBool == True:
+                    # 이미지 사이즈 변경 후
+                    PngReshape(filepath,'A3')
+                    # 이미지 삽입
                     hwp.InsertPicture(filepath, True, 1,(420,297))
                 else:
+                    # 이미지 사이즈 변경 후
+                    PngReshape(filepath,'A4')
+                    # 이미지 삽입
                     hwp.InsertPicture(filepath, True, 1,(297,210))
             else: 
                 print(filename+"이미지 파일이 아닙니다.")
@@ -194,13 +225,19 @@ def PngToHwp(pngpath, hwppath, hwpFileName):
         hwp.SaveAs(hwppath+'\\'+hwpFileName)
         print("     ",hwppath, "- 저장 완료")
         hwp.Quit()
-    except:
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        # logging.error(traceback.format_exc())
         print("     PNG2HWP 오류 발생")
+        print("오류명: " , e)
+
         hwp.Quit()
 
 
+
 if __name__ == "__main__":
+    
+    print("PPT 2 PNG 2 HWP 시작")
+    printhelp()
 
     #1. 파일 선택
     print("1. 파일을 선택하세요")
@@ -219,7 +256,13 @@ if __name__ == "__main__":
         
         #점이 하나라도 있으면 변경하여 리스트에 추가
         if filename.find('.') != -1:
-            new_filename = filename.replace('.','_')
+            #new_filename = filename.replace('.','_')
+            split_temp = filename.split('/') # / 기준으로 쪼개기
+            file_temp =split_temp.pop() # 마지막 위치는 파일명
+            split_temp.append(file_temp.replace('.','_')) #파일명에 . 있으면 대치
+            new_filename = '/'.join(split_temp) #/ 기준으로 다시 합치기
+            print(new_filename)
+
             os.rename(filename+".pptx",new_filename+".pptx")
             print("  파일명 변환: ",filename ,"   ->   ",new_filename)
 
@@ -268,5 +311,8 @@ if __name__ == "__main__":
 
     
     #파워포인트 전체 닫고 종료
+    
     powerpoint.Quit()
     os.system('pause')
+
+
