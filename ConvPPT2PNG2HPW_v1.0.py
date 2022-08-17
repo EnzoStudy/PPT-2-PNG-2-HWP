@@ -6,7 +6,8 @@ PPT -> PNG -> HWP 파일 변경 프로그램
 버전관리
 v0.9(2022.01.11, 신재호) : .이 포함된 파일명 오류 제거 , 슬라이드번호 정렬 오류 해결 
 v1.0(2022.01.11, 신재호) : A3 이미지 입력시 HWP 사이즈 변경
-V1.1(2022.08.17, 신재호) : PNG 사이즈를 A4규격에 맞게
+V1.1(2022.08.17, 신재호) : PNG 사이즈를 A4규격에 맞게 & 폴더명에도 . 들어간거 해결
+V1.2(2022.08.17, 신재호) : PNG 사이즈 안바꾸고 한글에서 바로 사이즈 변경하여 넣기 
 '''
 
 import os
@@ -17,6 +18,7 @@ from tkinter.filedialog import askopenfilenames
 import shutil
 import logging
 import traceback
+from turtle import width
 
 #import win32com.client
 # https://github.com/mhammond/pywin32/releases/tag/b300 참고하여 버전에 맞게 다운로드
@@ -108,17 +110,17 @@ def ppt2png(pptFileDir, pngfolderDir,filetype):
 def HwpUnitToMili(hwpunit):
     return hwpunit * 283
 
-def PngReshape(filepath, type='A4'):
-    # https://ponyozzang.tistory.com/600 참고
-    A3_size = (1584,1122)
-    A4_size = (790,1110)
+# def PngReshape(filepath, type='A4'):
+#     # https://ponyozzang.tistory.com/600 참고
+#     A3_size = (1584,1122)
+#     A4_size = (790,1110)
 
-    img = Image.open(filepath)
-    if type =='A4':
-        img_resize = img.resize(A4_size,Image.LANCZOS)
-    else:
-        img_resize = img.resize(A3_size,Image.LANCZOS)
-    img_resize.save(filepath)    
+#     img = Image.open(filepath)
+#     if type =='A4':
+#         img_resize = img.resize(A4_size,Image.LANCZOS)
+#     else:
+#         img_resize = img.resize(A3_size,Image.LANCZOS)
+#     img_resize.save(filepath)    
 
 
 
@@ -211,14 +213,14 @@ def PngToHwp(pngpath, hwppath, hwpFileName):
                 #https://www.hancom.com/board/devmanualList.do?artcl_seq=3978 참고
                 if A3imageCheckBool == True:
                     # 이미지 사이즈 변경 후
-                    PngReshape(filepath,'A3')
+                    # PngReshape(filepath,'A3')
                     # 이미지 삽입
-                    hwp.InsertPicture(filepath, True, 1,(420,297))
+                    hwp.InsertPicture(filepath, True, 1,False,False,False,420,297)
                 else:
                     # 이미지 사이즈 변경 후
-                    PngReshape(filepath,'A4')
+                    # PngReshape(filepath,'A4')
                     # 이미지 삽입
-                    hwp.InsertPicture(filepath, True, 1,(297,210))
+                    hwp.InsertPicture(filepath, True, 1,False,False,False,210,297)
             else: 
                 print(filename+"이미지 파일이 아닙니다.")
 
